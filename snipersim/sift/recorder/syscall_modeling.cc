@@ -44,7 +44,7 @@ bool handleAccessMemory(void *arg, Sift::MemoryLockType lock_signal, Sift::Memor
    return true;
 }
 
-void passGpuMessage(int dstX, int dstY, int srcX,int srcY,uint64_t *data,int dataNum){
+void passGpuMessage(int dstX, int dstY, int srcX,int srcY,int64_t *data,int dataNum){
     long int *Data=reinterpret_cast<long int*>(data);
     //cout<<"转换后："<<Data[1]<<" "<<Data[2]<<endl;
     char * fileName = new char[100];
@@ -123,7 +123,7 @@ VOID emulateSyscallFunc(THREADID threadid, CONTEXT *ctxt)
    sift_assert(syscall_number < MAX_NUM_SYSCALLS);
 
    syscall_args_t args;
-   uint64_t* ARG;
+   int64_t* ARG;
    #if defined(TARGET_IA32)
       args[0] = PIN_GetContextReg(ctxt, LEVEL_BASE::REG_GBX);
       args[1] = PIN_GetContextReg(ctxt, LEVEL_BASE::REG_GCX);
@@ -242,7 +242,7 @@ VOID emulateSyscallFunc(THREADID threadid, CONTEXT *ctxt)
          case nsChange::SYSCALL_SEND_TO_GPU:{
                thread_data[threadid].last_syscall_number = syscall_number;
                thread_data[threadid].last_syscall_emulated=true;
-               ARG=reinterpret_cast<uint64_t*>(args[4]);
+               ARG=reinterpret_cast<int64_t*>(args[4]);
                //cout<<ARG[0]<<endl;
                passGpuMessage(args[0],args[1],args[2],args[3],ARG,args[5]);
                thread_data[threadid].last_syscall_returnval = 1;
