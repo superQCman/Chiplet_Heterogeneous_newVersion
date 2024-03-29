@@ -1,0 +1,8 @@
+kernel line : count latency dram_traffic smem_bk_conflicts smem_warp gmem_access_generated gmem_warp exposed_latency warp_divergence
+hello.1.sm_52.ptx 31 : 1 6 0 0 0 0 0 0 0 
+hello.1.sm_52.ptx 30 : 1 4 0 0 0 1 1 0 0 
+hello.1.sm_52.ptx 29 : 1 10 0 0 0 0 0 0 0 
+hello.1.sm_52.ptx 28 : 1 7 0 0 0 0 0 0 0 
+hello.1.sm_52.ptx 27 : 1 275 0 0 0 0 0 0 0 
+hello.1.sm_52.ptx 26 : 1 276 0 0 0 0 0 0 0 
+hello.1.sm_52.ptx 25 : 1 276 0 0 0 0 0 0 0 

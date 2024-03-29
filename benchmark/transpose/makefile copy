@@ -1,0 +1,8 @@
+NVCC=nvcc
+GPU_TARGET=tran_cu
+GPU_RCS=tran.cu
+all:
+	$(NVCC) --cudart shared $(GPU_RCS) -o $(GPU_TARGET)
+
+run:
+	./$(GPU_TARGET)

@@ -1,0 +1,377 @@
+diff --git a/common/core/syscall_model.cc b/common/core/syscall_model.cc
+index c336283..ca4c1b8 100644
+--- a/common/core/syscall_model.cc
++++ b/common/core/syscall_model.cc
+@@ -23,6 +23,14 @@
+ 
+ #include <boost/algorithm/string.hpp>
+ 
++//changed at 2020-3-27
++#include "../../../interchiplet/includes/sniper_change.h"
++#include <unordered_map>
++#include <cstdint>
++//#include<atomic>
++#include <map>
++//#include<mutex>
++
+ const char *SyscallMdl::futex_names[] =
+ {
+    "FUTEX_WAIT", "FUTEX_WAKE", "FUTEX_FD", "FUTEX_REQUEUE",
+@@ -31,6 +39,17 @@ const char *SyscallMdl::futex_names[] =
+    "FUTEX_CMP_REQUEUE_PI"
+ };
+ 
++//changed at 2020-5-4
++struct SPortInfo
++{
++   int64_t localPort, remoteAddr, remotePort;
++};
++//typedef std::map<int64_t,int64_t> des_addr_map_t;
++typedef std::unordered_map<int64_t, SPortInfo> des_addr_map_t;
++des_addr_map_t des_addr_map;
++std::ofstream msg_record("message_record.txt");
++//pthread_mutex_t mtx;
++
+ SyscallMdl::SyscallMdl(Thread *thread)
+       : m_thread(thread)
+       , m_emulated(false)
+@@ -290,6 +309,110 @@ bool SyscallMdl::runEnter(IntPtr syscall_number, syscall_args_t &args)
+          break;
+       }
+ 
++      //changed at 2020-3-27
++      //syscall numbers on inter-chiplet operations
++      case nsChange::SYSCALL_TEST_CHANGE:
++         //testing
++         std::cout << "Test succeeds(core)\n";
++         break;
++
++      case nsChange::SYSCALL_REMOTE_READ:
++      {
++         //TODO: 跨芯粒读
++         //read from other chiplet
++         ScopedLock sl(Sim()->getThreadManager()->getLock());
++         auto cur_time = m_thread->getCore()->getPerformanceModel()->getElapsedTime();
++         des_addr_map_t::iterator it = des_addr_map.find(args.arg0);
++         //recv (local port) (remote address) (remote port) (local core) (time by nanosecond)
++         if (it != des_addr_map.end())
++         {
++            msg_record << "recv "
++                     << args.arg0 << ' '
++                     << it->second.remoteAddr << ' '
++                     << it->second.remotePort << ' '
++                     << m_thread->getCore()->getId() << ' '
++                     << cur_time.getNS() << std::endl;
++         }
++         Sim()->getThreadManager()->stallThread_async(
++            m_thread->getId(),
++            ThreadManager::STALL_SYSCALL,
++            cur_time);
++         m_stalled = true;
++         break;
++      }
++
++      case nsChange::SYSCALL_REMOTE_WRITE:
++      {
++         //TODO: 跨芯粒写
++         ScopedLock sl(Sim()->getThreadManager()->getLock());
++         auto cur_time = m_thread->getCore()->getPerformanceModel()->getElapsedTime();
++         des_addr_map_t::iterator it = des_addr_map.find(args.arg0);
++         //send 本地端口 远程地址 远程端口 本地核心 时间（按纳秒计）
++         if (it != des_addr_map.end())
++         {
++            msg_record << "send "
++                     << args.arg0 << ' '
++                     << it->second.remoteAddr << ' '
++                     << it->second.remotePort << ' '
++                     << m_thread->getCore()->getId() << ' '
++                     << cur_time.getNS() << std::endl;
++         }
++         Sim()->getThreadManager()->stallThread_async(
++            m_thread->getId(),
++            ThreadManager::STALL_SYSCALL,
++            cur_time);
++         m_stalled = true;
++         break;
++      }
++
++      case nsChange::SYSCALL_REG_FUNC:
++      {
++         ScopedLock sl(Sim()->getThreadManager()->getLock());
++         Sim()->getThreadManager()->stallThread_async(
++            m_thread->getId(),
++            ThreadManager::STALL_SYSCALL,
++            m_thread->getCore()->getPerformanceModel()->getElapsedTime());
++         m_stalled = true;
++         break;
++      }
++      case nsChange::SYSCALL_CONNECT:
++      {
++         ScopedLock sl(Sim()->getThreadManager()->getLock());
++         des_addr_map_t::iterator it = des_addr_map.find(args.arg0);
++         //本地端口 远程地址 远程端口
++         if (it == des_addr_map.end())
++            des_addr_map.insert(std::pair<int64_t, SPortInfo>(args.arg0,
++                                                            {args.arg0, args.arg1, args.arg2}));
++         Sim()->getThreadManager()->stallThread_async(
++            m_thread->getId(),
++            ThreadManager::STALL_SYSCALL,
++            m_thread->getCore()->getPerformanceModel()->getElapsedTime());
++         m_stalled = true;
++         break;
++      }
++      case nsChange::SYSCALL_DISCONNECT:
++      {
++         ScopedLock sl(Sim()->getThreadManager()->getLock());
++         //本地端口
++         des_addr_map.erase(args.arg0);
++         Sim()->getThreadManager()->stallThread_async(
++            m_thread->getId(),
++            ThreadManager::STALL_SYSCALL,
++            m_thread->getCore()->getPerformanceModel()->getElapsedTime());
++         m_stalled = true;
++         break;
++      }
++      case nsChange::SYSCALL_GET_LOCAL_ADDR:
++      {
++         ScopedLock sl(Sim()->getThreadManager()->getLock());
++         Sim()->getThreadManager()->stallThread_async(
++            m_thread->getId(),
++            ThreadManager::STALL_SYSCALL,
++            m_thread->getCore()->getPerformanceModel()->getElapsedTime());
++         m_stalled = true;
++         break;
++      }
++
+       case static_cast<unsigned long>(-1):
+       default:
+          break;
+diff --git a/common/trace_frontend/trace_thread.cc b/common/trace_frontend/trace_thread.cc
+index 227f9cb..da00165 100644
+--- a/common/trace_frontend/trace_thread.cc
++++ b/common/trace_frontend/trace_thread.cc
+@@ -25,6 +25,9 @@
+ 
+ #include <x86_decoder.h>  // TODO remove when the decode function in microop perf model is adapted
+ 
++//changed at 2020-4-19
++#include<execinfo.h>
++
+ int TraceThread::m_isa = 0;
+ 
+ TraceThread::TraceThread(Thread *thread, SubsecondTime time_start, String tracefile, String responsefile, app_id_t app_id, bool cleanup)
+@@ -747,6 +750,21 @@ void TraceThread::unblock()
+    m_blocked = false;
+ }
+ 
++//changed at 2020-4-19
++//output stack
++void outputStack()
++{
++   const size_t SIZE=100;
++    int j, nptrs;
++    void *buffer[SIZE];
++    char **strings;
++
++    nptrs = backtrace(buffer, SIZE);
++    printf("backtrace() returned %d addresses \r\n", nptrs);
++
++    backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO);
++}
++
+ void TraceThread::run()
+ {
+    // Set thread name for Sniper-in-Sniper simulations
+diff --git a/sift/recorder/globals.cc b/sift/recorder/globals.cc
+index b27d763..be39834 100644
+--- a/sift/recorder/globals.cc
++++ b/sift/recorder/globals.cc
+@@ -54,3 +54,6 @@ Sift::Mode current_mode = Sift::ModeIcount;
+ std::unordered_map<ADDRINT, bool> routines;
+ 
+ extrae_image_t extrae_image;
++
++//changed at 2020-4-19
++std::vector<SRegFunc>regFunc;
+diff --git a/sift/recorder/globals.h b/sift/recorder/globals.h
+index d2fb8c2..fd2460e 100644
+--- a/sift/recorder/globals.h
++++ b/sift/recorder/globals.h
+@@ -14,6 +14,9 @@
+ #include <unordered_map>
+ #include <deque>
+ 
++//changed at 2020-4-19
++#include<vector>
++
+ //#define DEBUG_OUTPUT 1
+ #define DEBUG_OUTPUT 0
+ 
+@@ -85,4 +88,12 @@ typedef uint64_t syscall_args_t[6];
+ #endif
+ */
+ 
++//changed at 2020-4-19
++struct SRegFunc{
++   AFUNPTR readFunc,writeFunc;
++   AFUNPTR testFunc;
++   AFUNPTR writeProMem;
++};
++extern std::vector<SRegFunc>regFunc;
++
+ #endif // __GLOBALS_H
+diff --git a/sift/recorder/sift_recorder.cc b/sift/recorder/sift_recorder.cc
+index 4d5c003..76a381d 100644
+--- a/sift/recorder/sift_recorder.cc
++++ b/sift/recorder/sift_recorder.cc
+@@ -123,6 +123,34 @@ void __sift_assert_fail(__const char *__assertion, __const char *__file,
+    }
+ }
+ 
++//changed at 2020-4-19
++AFUNPTR FindAddressOfRtn(IMG img, const char*rtnName)
++{
++    RTN r = RTN_FindByName(img, rtnName);
++    //ASSERT(RTN_Valid(r), "Failed to find RTN " + rtnName);
++    return (AFUNPTR)RTN_Address(r);
++}
++
++//change this function to get a pointer to the function which read or write memory of benchmark
++void getFuncAddr(IMG image,VOID*v)
++{
++   if(IMG_IsMainExecutable(image)){
++      SRegFunc rf;
++      rf.testFunc=FindAddressOfRtn(image,"change");
++      rf.readFunc=FindAddressOfRtn(image,"remoteRead");
++      rf.writeFunc=FindAddressOfRtn(image,"remoteWrite");
++      rf.writeProMem=FindAddressOfRtn(image,"writeProcessMemory");
++      if((long unsigned int)num_threads>=regFunc.size())regFunc.push_back(rf);
++      else regFunc[num_threads]=rf;
++   }
++}
++
++//Forgive me. I just don't want to create a new head file.
++//int openZmqProcess();
++//int closeZmqProcess();
++int openZmqProcess() { return 0; }
++int closeZmqProcess() { return 0; }
++
+ INSTLIBSNIPER::ICOUNT icount;
+ 
+ VOID Handler(CONTROLLER::EVENT_TYPE ev, VOID * v, CONTEXT * ctxt, VOID * ip, THREADID tid, BOOL bcast)
+@@ -297,7 +325,15 @@ int main(int argc, char **argv)
+ 
+    pinboost_register("SIFT_RECORDER", KnobDebug.Value());
+ 
++   //changed at 2020-4-19
++   IMG_AddInstrumentFunction(getFuncAddr,NULL);
++
++   //changed at 2020-4-24
++   if(openZmqProcess()>=0)std::cout<<"[CHANGE] zmq_pro starts sucessfully.\n";
++
+    PIN_StartProgram();
+ 
++   if(closeZmqProcess()>=0)std::cout<<"[CHANGE] zmq_pro closes successfully.\n";
++
+    return 0;
+ }
+diff --git a/sift/recorder/syscall_modeling.cc b/sift/recorder/syscall_modeling.cc
+index 4944127..91c1bb9 100644
+--- a/sift/recorder/syscall_modeling.cc
++++ b/sift/recorder/syscall_modeling.cc
+@@ -7,6 +7,9 @@
+ #include <unistd.h>
+ #include <syscall.h>
+ 
++#include "../../../interchiplet/includes/sniper_change.h"
++#include "../../../interchiplet/includes/intercomm.h"
++
+ bool handleAccessMemory(void *arg, Sift::MemoryLockType lock_signal, Sift::MemoryOpType mem_op, uint64_t d_addr, uint8_t* data_buffer, uint32_t data_size)
+ {
+    // Lock memory globally if requested
+@@ -40,6 +43,51 @@ bool handleAccessMemory(void *arg, Sift::MemoryLockType lock_signal, Sift::Memor
+    return true;
+ }
+ 
++nsInterchiplet::PipeComm global_pipe_comm;
++
++int passGpuMessage(int dstX, int dstY, int srcX,int srcY,int* data,int dataNum)
++{
++   printf("Enter Sniper passGpuMessage\n");
++   char * fileName = new char[100];
++   sprintf(fileName,"./buffer%d_%d_%d_%d",srcX,srcY,dstX,dstY);
++
++   global_pipe_comm.write_data(fileName, data, dataNum * sizeof(int));
++   delete fileName;
++
++   char* filename = new char[64];
++   sprintf(filename,"./bench.%d.%d",srcX,srcY);
++   std::fstream toController(filename,std::ios::out | std::ios::trunc);
++   long long unsigned int timeNow = 0;
++
++   if(!toController.is_open())
++   {
++      std::cout<<"Can not pass message to controller\n\n\n\n\n\n";
++      return 1;
++   }
++   else
++   {
++      toController<<timeNow<<" ";
++      toController<<srcX<<" ";
++      toController<<srcY<<" ";
++      toController<<dstX<<" ";
++      toController<<dstY<<" ";
++      toController<<5<<"\n";
++   }
++   toController.close();
++   return 1;
++}
++
++int readGpuMessage(int dstX, int dstY, int srcX,int srcY,int* data,int dataNum)
++{
++   printf("Enter Sniper readGpuMessage\n");
++   char * fileName = new char[100];
++   sprintf(fileName,"./buffer%d_%d_%d_%d",srcX,srcY,dstX,dstY);
++
++   global_pipe_comm.read_data(fileName, data, dataNum * sizeof(int));
++   delete fileName;
++   return 1;
++}
++
+ // Emulate all system calls
+ // Do this as a regular callback (versus syscall enter/exit functions) as those hold the global pin lock
+ VOID emulateSyscallFunc(THREADID threadid, CONTEXT *ctxt)
+@@ -174,6 +222,33 @@ VOID emulateSyscallFunc(THREADID threadid, CONTEXT *ctxt)
+          case SYS_exit_group:
+             thread_data[threadid].output->Syscall(syscall_number, (char*)args, sizeof(args));
+             break;
++
++         case nsChange::SYSCALL_SEND_TO_GPU:{
++               thread_data[threadid].last_syscall_number = syscall_number;
++               thread_data[threadid].last_syscall_emulated=true;
++
++               thread_data[threadid].last_syscall_returnval =
++                  passGpuMessage(args[0],args[1],args[2],args[3],(int*)args[4],args[5]);
++               thread_data[threadid].output->Syscall(
++                  syscall_number,
++                  (char *)args,
++                  sizeof(args));
++         break;
++         }
++
++         case nsChange::SYSCALL_READ_FROM_GPU:{
++         thread_data[threadid].last_syscall_number = syscall_number;
++               thread_data[threadid].last_syscall_emulated=true;
++
++               thread_data[threadid].last_syscall_returnval =
++                  readGpuMessage(args[0],args[1],args[2],args[3],(int*)args[4],args[5]);
++               thread_data[threadid].output->Syscall(
++                  syscall_number,
++                  (char *)args,
++                  sizeof(args));
++               break;
++                           
++         }
+       }
+    }
+ }
