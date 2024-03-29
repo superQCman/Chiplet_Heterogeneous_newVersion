@@ -77,18 +77,12 @@ void passGpuMessage(int dstX, int dstY, int srcX,int srcY,uint64_t *data,int dat
       fprintf(File,"%d ",dstX);
       fprintf(File,"%d ",dstY);
       fprintf(File,"%d\n",5);
-      // toController<<timeNow<<" ";
-      // toController<<srcX<<" ";
-      // toController<<srcY<<" ";
-      // toController<<dstX<<" ";
-      // toController<<dstY<<" ";
-      // toController<<5<<"\n";
            }
    fclose(File);
    //toController.close();
 }
 
-int readGpuMessage( int dstX,int dstY,int srcX,int srcY,int data,int dataNum){
+int64_t readGpuMessage( int dstX,int dstY,int srcX,int srcY,int64_t data,int dataNum){
 
    char * fileName = new char[100];
    sprintf(fileName,"./buffer%d_%d_%d_%d",srcX,srcY,dstX,dstY);
@@ -98,7 +92,7 @@ int readGpuMessage( int dstX,int dstY,int srcX,int srcY,int data,int dataNum){
       file.open(fileName,std::ios::in );
       }
    std::cout << fileName<<" opened successfully." << std::endl;
-   int tmpdata = 0;
+   int64_t tmpdata = 0;
    for(int i = 0;i<dataNum;i++)
    {
       file>>tmpdata;
