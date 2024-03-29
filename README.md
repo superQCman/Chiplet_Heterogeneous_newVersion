@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Chiplet_Heterogeneous_newVersion
 
 本版本仿真器使用了GPGPU-Sim 4.0.0版本
@@ -156,3 +157,6 @@ apply_patch.sh脚本用来应用Patch：
 2. 当apply出错时，可以参考.changed_files中的文件手动修改snipersim和gpgpu-sim的文件。
 
 需要说明的是：不建议用.changed_files直接覆盖snipersim和gpgpu-sim文件夹。因为snipersim和gpgpu-sim本身的演进可能会与芯粒仿真器修改相同的文件。使用Patch的方式会报告修改的冲突。如果直接覆盖，则会导致不可预见的错误。
+=======
+# Chiplet_Heterogeneous_newVersion
+>>>>>>> 2d8fd9b8f85668b25d172424627804d1ae0b0fc6
