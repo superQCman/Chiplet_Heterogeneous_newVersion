@@ -9,7 +9,7 @@
 #include <vector>
 #include <typeinfo>
 #include <fstream>
-#include "/home/qc/Chiplet_Heterogeneous_newVersion/interchiplet/includes/./sniper_change.h"
+#include "../../interchiplet/includes/./sniper_change.h"
 
 bool handleAccessMemory(void *arg, Sift::MemoryLockType lock_signal, Sift::MemoryOpType mem_op, uint64_t d_addr, uint8_t* data_buffer, uint32_t data_size)
 {
