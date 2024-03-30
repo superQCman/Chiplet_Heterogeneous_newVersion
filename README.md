@@ -101,13 +101,12 @@
     To compile and run the tests, you need to execute
 
    ```sh
+   $ mv ./json $HOME
    $ cd json
    $ mkdir build
    $ cd build
    $ cmake .. -DJSON_BuildTests=On
    $ cmake --build .
-   $ cd ..
-   $ mv ./json $HOME
    ```
 ## 验证安装
 
