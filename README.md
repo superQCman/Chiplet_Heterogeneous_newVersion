@@ -28,7 +28,7 @@
 
 1. 从github上下载仓库。
 
-    ```
+    ```sh
     git clone https://github.com/FCAS-SCUT/Chiplet_Heterogeneous_newVersion.git
     ```
 
@@ -36,14 +36,14 @@
 
 2. 初始化并更新submodule。
 
-    ```
+    ```sh
     git submodule init
     git submodule update
     ```
 
 3. 运行脚本，初始化环境变量
 
-    ```
+    ```sh
     source setup_env.sh
     ```
 
@@ -51,7 +51,7 @@
 
 4. 对于snipersim和gpgpu-sim代码进行修改。
 
-    ```
+    ```sh
     ./apply_patch.sh
     ```
 
@@ -59,7 +59,7 @@
 
 5. 编译安装snipersim。新版本的snipersim提供了非常自动化的编译脚本，直接执行make即可。
 
-    ```
+    ```sh
     cd snipersim
     make -j4
     ```
@@ -71,21 +71,21 @@
 
     配置好Cuda和编译器，可以直接执行make。
 
-    ```
+    ```sh
     cd gpgpu-sim
     make -j4
     ```
 
 7. 编译安装popnet
 
-    ```
+    ```sh
     cd popnet
     make -j4
     ```
 
 8. 编译安装芯粒间通信程序。interchiplet提供了芯粒间通信所需要的API和实现代码。
 
-    ```
+    ```sh
     cd interchiplet
     mkdir build
     cd build
@@ -102,7 +102,7 @@
 
    ```sh
    $ mv ./json $HOME
-   $ cd json
+   $ cd $HOME && cd json
    $ mkdir build
    $ cd build
    $ cmake .. -DJSON_BuildTests=On
