@@ -106,7 +106,8 @@
    $ cd build
    $ cmake .. -DJSON_BuildTests=On
    $ cmake --build .
-   $ ctest --output-on-failure
+   $ cd ..
+   $ mv ./json $HOME
    ```
 ## 验证安装
 
