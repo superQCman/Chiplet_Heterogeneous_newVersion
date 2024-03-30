@@ -168,5 +168,3 @@ apply_patch.sh脚本用来应用Patch：
 
 需要说明的是：不建议用.changed_files直接覆盖snipersim和gpgpu-sim文件夹。因为snipersim和gpgpu-sim本身的演进可能会与芯粒仿真器修改相同的文件。使用Patch的方式会报告修改的冲突。如果直接覆盖，则会导致不可预见的错误。
 =======
-# Chiplet_Heterogeneous_newVersion
->>>>>>> 2d8fd9b8f85668b25d172424627804d1ae0b0fc6
