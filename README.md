@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Chiplet_Heterogeneous_newVersion
 
 本版本仿真器使用了GPGPU-Sim 4.0.0版本
@@ -97,7 +96,17 @@
     编译完成后应在interchiplet/bin下找到record_transfer和zmq_pro，在interchiplet/lib下找到libinterchiplet_app.a。
 
     zmq_pro需要安装zmq环境。通常会在cmake步骤被忽略。
+9. 安装json用于读取数据
+    
+    To compile and run the tests, you need to execute
 
+   ```sh
+   $ mkdir build
+   $ cd build
+   $ cmake .. -DJSON_BuildTests=On
+   $ cmake --build .
+   $ ctest --output-on-failure
+   ```
 ## 验证安装
 
 正确执行上述过程后，可以使用benchmark/matmul验证环境设置是否正确。
