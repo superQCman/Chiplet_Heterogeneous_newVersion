@@ -101,6 +101,7 @@
     To compile and run the tests, you need to execute
 
    ```sh
+   $ cd json
    $ mkdir build
    $ cd build
    $ cmake .. -DJSON_BuildTests=On
