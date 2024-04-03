@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 		cudaMalloc((void**)&Size_A, sizeof(int64_t) *2);
 		cudaMalloc((void**)&Size_B, sizeof(int64_t) *2);
 		
-		sprintf(fileName,"./gpuRead%d_%d_%d_%d",0,0,srcX,srcY);
+		sprintf(fileName,"./gpuRead1%d_%d_%d_%d",0,0,srcX,srcY);
 		bool file=0;
 		while(file==0){
 			file=checkfile(fileName);
