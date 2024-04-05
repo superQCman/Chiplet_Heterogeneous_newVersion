@@ -26,7 +26,7 @@ debug: CFLAGS += -DDEBUG -g
 debug: all
 
 gpgpusim_target:
-	$(NVCC) --cudart shared $(GPGPUSIM_SRCS) -o $(GPGPUSIM_TARGET)
+	$(NVCC) --cudart shared $(GPGPUSIM_SRCS) -o $(GPGPUSIM_TARGET) -g
 
 run:
 	touch "start running" &

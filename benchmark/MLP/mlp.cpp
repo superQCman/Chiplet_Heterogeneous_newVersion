@@ -329,8 +329,10 @@ std::vector<std::vector<double>> forward(std::vector<std::vector<double>>& x){
         }
         std::vector<std::vector<double>> z=DotRns;
         a1=activate_function(z);
-        vectorToDouble(a1,A);
         Col=a1.size();Row=a1[0].size();
+        delete []A;
+        A=new double[Row*Col];
+        vectorToDouble(a1,A);
         zs.push_back(z);
         activations.push_back(a1);
         delete[] Weight;
